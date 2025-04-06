@@ -10,6 +10,7 @@ import { RfpChatbot } from "@/components/RfpChatbot";
 import { RfpUploader } from "@/components/RfpUploader";
 import { useRagSystem } from "@/hooks/useRagSystem";
 import { CompanyProfile } from "@/components/CompanyProfile";
+import { RfpUploaderEnhanced } from "@/components/RfpUploaderEnhanced";
 
 const Index = () => {
   const { toast } = useToast();
@@ -25,35 +26,19 @@ const Index = () => {
     missingRequirements: string[];
   } | null>(null);
 
-  const companyProfile = {
-    name: "ConsultAdd",
-    description: "Provider of professional services to U.S. government agencies",
+  // Define companyDetails in the format expected by the CompanyProfile component
+  const companyDetails = {
+    companyName: "ConsultAdd",
     certifications: [
       "ISO 9001:2015",
       "CMMI Level 3",
       "GSA Schedule Contract Holder",
     ],
-    pastPerformance: [
-      {
-        agency: "Department of Defense",
-        projectName: "IT Systems Modernization",
-        year: 2023,
-        value: "$5.2M",
-      },
-      {
-        agency: "Department of Health",
-        projectName: "Data Analytics Platform",
-        year: 2022,
-        value: "$3.8M",
-      },
-      {
-        agency: "Department of Energy",
-        projectName: "Cybersecurity Enhancement",
-        year: 2021,
-        value: "$4.5M",
-      },
-    ],
-    stateRegistrations: ["Texas", "California", "Virginia", "Maryland", "DC"],
+    experience: {
+      "IT Systems Modernization": { years: 5 },
+      "Data Analytics": { years: 4 },
+      "Cybersecurity": { years: 6 },
+    },
     capabilities: [
       "Software Development",
       "Cloud Migration",
@@ -61,6 +46,13 @@ const Index = () => {
       "Cybersecurity",
       "IT Consulting",
     ],
+    registrations: ["Texas", "California", "Virginia", "Maryland", "DC"],
+  };
+
+  // Function to update company details
+  const handleUpdateCompanyDetails = (details) => {
+    console.log("Updated company details:", details);
+    // In a real application, you would likely save this to some state or backend
   };
 
   const analyzeRfp = async (rfpId: string) => {
@@ -102,6 +94,23 @@ const Index = () => {
   const handleAnalyzeRfp = async (rfpId: string): Promise<void> => {
     await analyzeRfp(rfpId);
     // The return type is void, which matches what's expected in RfpAnalysis
+  };
+
+  // Mock function for ask question implementation
+  const handleAskQuestion = async (question: string, rfpId?: string) => {
+    console.log("Question asked:", question, "RFP ID:", rfpId);
+    // In a real app, this would call an API endpoint or your RAG system
+    return {
+      results: [
+        {
+          id: "1",
+          content: "This is a mock search result",
+          metadata: {},
+          score: 0.95
+        }
+      ],
+      answer: "This is a mock answer to your question."
+    };
   };
 
   return (
@@ -156,10 +165,13 @@ const Index = () => {
                 <TabsContent value="upload" className="mt-0">
                   <div className="grid gap-6 md:grid-cols-2">
                     <div>
-                      <RfpUploader onRfpUploaded={handleRfpUploaded} />
+                      <RfpUploaderEnhanced onRfpUploaded={handleRfpUploaded} />
                     </div>
                     <div>
-                      <CompanyProfile profile={companyProfile} />
+                      <CompanyProfile 
+                        companyDetails={companyDetails} 
+                        onUpdateCompanyDetails={handleUpdateCompanyDetails} 
+                      />
                     </div>
                   </div>
                 </TabsContent>
@@ -174,7 +186,11 @@ const Index = () => {
                 </TabsContent>
 
                 <TabsContent value="chat" className="mt-0">
-                  <RfpChatbot rfpId={currentRfpId} />
+                  <RfpChatbot 
+                    rfpId={currentRfpId} 
+                    onAskQuestion={handleAskQuestion}
+                    isLoading={loading}
+                  />
                 </TabsContent>
               </CardContent>
             </Card>
