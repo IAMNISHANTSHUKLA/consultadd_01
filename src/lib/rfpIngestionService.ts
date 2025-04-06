@@ -51,6 +51,9 @@ export class RfpIngestionService {
         }
       }));
       
+      // Ensure vector store is initialized before adding documents
+      await vectorStore.initialize();
+      
       // Store in the vector database
       await vectorStore.addDocuments(documents);
       

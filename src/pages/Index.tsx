@@ -88,6 +88,12 @@ const Index = () => {
     });
   };
 
+  // Handle RFP analysis - create a wrapper function that matches the expected type
+  const handleAnalyzeRfp = async (rfpId: string): Promise<void> => {
+    await analyzeRfp(rfpId);
+    // The return type is void, which matches what's expected in RfpAnalysis
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-slate-50">
       <header className="bg-white shadow-sm py-4 px-4">
@@ -165,7 +171,7 @@ const Index = () => {
               <RfpAnalysis
                 rfpId={currentRfpId}
                 analysis={analyzedRfp}
-                onAnalyze={analyzeRfp}
+                onAnalyze={handleAnalyzeRfp}
                 isLoading={loading}
               />
             </TabsContent>

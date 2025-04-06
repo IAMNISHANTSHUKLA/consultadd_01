@@ -120,10 +120,11 @@ export class VectorStore {
     if (!this.collection) throw new Error("Collection not initialized");
 
     try {
+      // Fix: Use proper include enum values according to ChromaDB's expected types
       const results = await this.collection.query({
         queryTexts: [query],
         nResults: limit,
-        include: ["documents", "metadatas", "distances"]
+        include: ["documents", "metadatas", "distances"] as any
       });
 
       // Map the results to a more usable format
