@@ -1,90 +1,100 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useRagSystem } from "@/hooks/useRagSystem";
-import { RfpUploader } from "@/components/RfpUploader";
+import { Bot, FileText, Upload } from "lucide-react";
 import { RfpAnalysis } from "@/components/RfpAnalysis";
 import { RfpChatbot } from "@/components/RfpChatbot";
+import { RfpUploader } from "@/components/RfpUploader";
+import { useRagSystem } from "@/hooks/useRagSystem";
 import { CompanyProfile } from "@/components/CompanyProfile";
-import { EmptyState } from "@/components/EmptyState";
-import { Bot, Upload, FileText, Building } from "lucide-react";
 
 const Index = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("upload");
-  const [showUploader, setShowUploader] = useState<boolean>(false);
-  
-  // Default company details
-  const [companyDetails, setCompanyDetails] = useState({
-    companyName: "ConsultAdd Inc.",
-    certifications: ["ISO 9001", "CMMI Level 5", "Minority-Owned Business"],
-    experience: {
-      "Government Contracting": { years: 12 },
-      "IT Services": { years: 15 },
-      "Healthcare IT": { years: 8 }
-    },
+  const [currentRfpId, setCurrentRfpId] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [analyzedRfp, setAnalyzedRfp] = useState<{
+    summary: string;
+    eligibilityReport: string;
+    submissionChecklist: string;
+    riskReport: string;
+    eligible: boolean;
+    missingRequirements: string[];
+  } | null>(null);
+
+  const companyProfile = {
+    name: "ConsultAdd",
+    description: "Provider of professional services to U.S. government agencies",
+    certifications: [
+      "ISO 9001:2015",
+      "CMMI Level 3",
+      "GSA Schedule Contract Holder",
+    ],
+    pastPerformance: [
+      {
+        agency: "Department of Defense",
+        projectName: "IT Systems Modernization",
+        year: 2023,
+        value: "$5.2M",
+      },
+      {
+        agency: "Department of Health",
+        projectName: "Data Analytics Platform",
+        year: 2022,
+        value: "$3.8M",
+      },
+      {
+        agency: "Department of Energy",
+        projectName: "Cybersecurity Enhancement",
+        year: 2021,
+        value: "$4.5M",
+      },
+    ],
+    stateRegistrations: ["Texas", "California", "Virginia", "Maryland", "DC"],
     capabilities: [
       "Software Development",
-      "Data Analytics",
       "Cloud Migration",
+      "Data Analytics",
       "Cybersecurity",
-      "Project Management"
+      "IT Consulting",
     ],
-    registrations: [
-      "Federal Contractor Registration",
-      "SAM.gov Registered",
-      "State of New York Vendor"
-    ]
-  });
-
-  // Initialize the RAG system
-  const {
-    loading,
-    error,
-    currentRfpId,
-    analyzedRfp,
-    initialize,
-    uploadRfp,
-    analyzeRfp,
-    askQuestion,
-  } = useRagSystem(companyDetails);
-
-  // Initialize system on first load
-  useEffect(() => {
-    initialize().catch(err => {
-      console.error("Failed to initialize RAG system:", err);
-      toast({
-        title: "System Initialization Failed",
-        description: "Could not initialize the document analysis system. Please try refreshing the page.",
-        variant: "destructive"
-      });
-    });
-  }, []);
-
-  // Show error toast when error changes
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive"
-      });
-    }
-  }, [error]);
-
-  // Handle upload completion
-  const handleUploadComplete = async (rfpId: string) => {
-    setActiveTab("analyze");
   };
 
-  // Update company details
-  const handleUpdateCompanyDetails = (details: typeof companyDetails) => {
-    setCompanyDetails(details);
+  const analyzeRfp = async (rfpId: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/analyze-rfp?rfpId=${rfpId}`, {
+        method: "GET",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to analyze RFP");
+      }
+      
+      const data = await response.json();
+      setAnalyzedRfp(data);
+      return data;
+    } catch (error) {
+      console.error("Error analyzing RFP:", error);
+      toast({
+        title: "Error",
+        description: "Failed to analyze RFP. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRfpUploaded = (rfpId: string) => {
+    setCurrentRfpId(rfpId);
+    setActiveTab("analyze");
     toast({
-      title: "Profile Updated",
-      description: "Your company profile has been updated successfully."
+      title: "Success",
+      description: "RFP uploaded successfully. Ready for analysis.",
     });
   };
 
@@ -95,113 +105,101 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-slate-50">
-      <header className="bg-white shadow-sm py-4 px-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Bot className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">RFP Analysis System</h1>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowUploader(true)}
-            className="flex items-center gap-1"
-          >
-            <Upload className="h-4 w-4" />
-            Upload RFP
-          </Button>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-slate-100">
+      {/* Hero section with gradient background */}
+      <div className="relative w-full bg-white">
+        {/* Background effect */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -inset-[10px] opacity-50 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 blur-3xl" />
         </div>
-      </header>
-
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-        {showUploader && !currentRfpId ? (
-          <div className="mb-8">
-            <RfpUploader 
-              onUpload={async (file, metadata) => {
-                try {
-                  const rfpId = await uploadRfp(file, metadata);
-                  handleUploadComplete(rfpId);
-                  setShowUploader(false);
-                  return rfpId;
-                } catch (error) {
-                  console.error("Upload failed:", error);
-                  throw error;
-                }
-              }}
-              isLoading={loading} 
-            />
+        
+        <div className="relative z-10 max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+              <span className="block">RFP AI Analysis</span>
+              <span className="block text-indigo-600">Smart Insights for Government Contracts</span>
+            </h1>
+            <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+              Automate RFP analysis with AI-powered insights. Save time, reduce risk, and increase win rates.
+            </p>
           </div>
-        ) : !currentRfpId ? (
-          <div className="mb-8">
-            <EmptyState 
-              onAction={() => setShowUploader(true)}
-            />
-          </div>
-        ) : null}
+        </div>
+      </div>
 
-        {currentRfpId && (
-          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex justify-between items-center mb-6">
-              <TabsList>
-                <TabsTrigger value="analyze" className="flex items-center gap-1">
-                  <FileText className="h-4 w-4" />
-                  RFP Analysis
-                </TabsTrigger>
-                <TabsTrigger value="qa" className="flex items-center gap-1">
-                  <Bot className="h-4 w-4" />
-                  Ask Questions
-                </TabsTrigger>
-                <TabsTrigger value="profile" className="flex items-center gap-1">
-                  <Building className="h-4 w-4" />
-                  Company Profile
-                </TabsTrigger>
-              </TabsList>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowUploader(true)}
-              >
-                Upload New RFP
+      <main className="flex-grow px-4 py-8 container mx-auto max-w-7xl">
+        <Tabs 
+          defaultValue="upload" 
+          value={activeTab} 
+          onValueChange={setActiveTab}
+          className="w-full"
+        >
+          <div className="flex justify-center mb-8">
+            <TabsList className="grid w-full max-w-md grid-cols-3 h-14">
+              <TabsTrigger value="upload" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Upload className="h-4 w-4" />
+                <span>Upload</span>
+              </TabsTrigger>
+              <TabsTrigger value="analyze" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <FileText className="h-4 w-4" />
+                <span>Analysis</span>
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Bot className="h-4 w-4" />
+                <span>Chat</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <div className="mt-6">
+            <Card className="border-none shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <TabsContent value="upload" className="mt-0">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div>
+                      <RfpUploader onRfpUploaded={handleRfpUploaded} />
+                    </div>
+                    <div>
+                      <CompanyProfile profile={companyProfile} />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="analyze" className="mt-0">
+                  <RfpAnalysis
+                    rfpId={currentRfpId}
+                    analysis={analyzedRfp}
+                    onAnalyze={handleAnalyzeRfp}
+                    isLoading={loading}
+                  />
+                </TabsContent>
+
+                <TabsContent value="chat" className="mt-0">
+                  <RfpChatbot rfpId={currentRfpId} />
+                </TabsContent>
+              </CardContent>
+            </Card>
+          </div>
+        </Tabs>
+      </main>
+      
+      <footer className="bg-white shadow-inner py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-500">
+              &copy; {new Date().getFullYear()} ConsultAdd RFP AI Analysis Tool
+            </p>
+            <div className="flex space-x-4">
+              <Button variant="link" size="sm" className="text-gray-500">
+                Terms
+              </Button>
+              <Button variant="link" size="sm" className="text-gray-500">
+                Privacy
+              </Button>
+              <Button variant="link" size="sm" className="text-gray-500">
+                Contact
               </Button>
             </div>
-
-            <TabsContent value="analyze" className="mt-0">
-              <RfpAnalysis
-                rfpId={currentRfpId}
-                analysis={analyzedRfp}
-                onAnalyze={handleAnalyzeRfp}
-                isLoading={loading}
-              />
-            </TabsContent>
-
-            <TabsContent value="qa" className="mt-0">
-              <RfpChatbot
-                rfpId={currentRfpId}
-                onAskQuestion={askQuestion}
-                isLoading={loading}
-              />
-            </TabsContent>
-
-            <TabsContent value="profile" className="mt-0">
-              <CompanyProfile
-                companyDetails={companyDetails}
-                onUpdateCompanyDetails={handleUpdateCompanyDetails}
-              />
-            </TabsContent>
-          </Tabs>
-        )}
-      </main>
-
-      <footer className="py-6 border-t bg-white">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
-          <p>
-            RFP Analysis System using ChromaDB vector database for semantic search
-          </p>
-          <p className="mt-1">
-            Powered by RAG (Retrieval Augmented Generation) technology
-          </p>
+          </div>
         </div>
       </footer>
     </div>
